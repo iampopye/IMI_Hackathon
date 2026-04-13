@@ -1,0 +1,26 @@
+# Binaries
+bin/
+*.exe
+
+# Environment — never commit real secrets
+.env
+
+# Config with real credentials — use config.yaml.example as template
+config/config.yaml
+
+# Go
+*.test
+*.out
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Bleve indexes (generated at runtime)
+*.bleve/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,47 @@
+app:
+  port: 8080
+  env: development
+  warmup_datasets: 50          # preload top N datasets on startup
+
+postgres:
+  host: localhost
+  port: 5432
+  user: CHANGE_ME
+  password: CHANGE_ME
+  dbname: searchdb
+  max_connections: 25
+  max_idle: 5
+
+elasticsearch:
+  host: http://localhost:9200
+  index_prefix: search_
+  refresh_interval: 30s
+
+redis:
+  host: localhost:6379
+  max_memory: 2gb
+  eviction_policy: allkeys-lru
+
+kafka:
+  broker: localhost:9092
+  topics:
+    upserted: records.upserted
+    deleted:  records.deleted
+    changed:  dataset.changed
+  consumer_lag_threshold: 500
+
+search:
+  in_memory_limit:  100000
+  bleve_file_limit: 5000000
+
+  stability_threshold:     0.70
+  stability_tick:          0.05
+  stability_decay:         0.80
+
+  tier_upgrade_confirmations: 5
+
+  outbox_poll_interval: 500ms
+  outbox_max_attempts:  5
+
+  batch_size:   1000
+  worker_count: 10

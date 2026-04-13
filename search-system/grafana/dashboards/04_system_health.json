@@ -1,0 +1,162 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "annotations": { "list": [] },
+  "description": "Reconciler drift detection, dataset tier transitions, and dead outbox recovery",
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 }] } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto", "colorMode": "background" },
+      "targets": [
+        {
+          "expr": "increase(reconciler_drift_detected_total[1h])",
+          "legendFormat": "Drift Events (1h)",
+          "refId": "A"
+        }
+      ],
+      "title": "PG ↔ ES Drift Events (last 1h)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 3 }] } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto", "colorMode": "background" },
+      "targets": [
+        {
+          "expr": "increase(reconciler_reindex_total[1h])",
+          "legendFormat": "Reindexes (1h)",
+          "refId": "A"
+        }
+      ],
+      "title": "Zero-Downtime Reindexes (last 1h)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 10 }, { "color": "red", "value": 50 }] } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto", "colorMode": "background" },
+      "targets": [
+        {
+          "expr": "outbox_pending_total",
+          "legendFormat": "Pending",
+          "refId": "A"
+        }
+      ],
+      "title": "Outbox Pending Backlog",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto", "colorMode": "background" },
+      "targets": [
+        {
+          "expr": "increase(outbox_events_total{status=\"dead\"}[1h])",
+          "legendFormat": "Dead Events (1h)",
+          "refId": "A"
+        }
+      ],
+      "title": "Dead Outbox Events (last 1h)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "increase(reconciler_drift_detected_total[5m])",
+          "legendFormat": "Drift Detected",
+          "refId": "A"
+        },
+        {
+          "expr": "increase(reconciler_reindex_total[5m])",
+          "legendFormat": "Reindex Triggered",
+          "refId": "B"
+        }
+      ],
+      "title": "Reconciler Activity Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 6,
+      "targets": [
+        {
+          "expr": "sum(rate(dataset_tier_transitions_total[5m])) by (from_tier, to_tier)",
+          "legendFormat": "{{from_tier}} → {{to_tier}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Dataset Tier Transitions",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "id": 7,
+      "targets": [
+        {
+          "expr": "sum(rate(outbox_events_total[1m])) by (status)",
+          "legendFormat": "outbox {{status}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(upsert_records_total{status=\"failed\"}[1m]))",
+          "legendFormat": "upsert failed",
+          "refId": "B"
+        }
+      ],
+      "title": "System-Wide Failure Signals",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": ["search-system", "health"],
+  "templating": { "list": [] },
+  "time": { "from": "now-3h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "04 — System Health",
+  "uid": "search-system-health",
+  "version": 1
+}

@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: search-api
+  namespace: search-system
+  labels:
+    app: search-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: search-api
+  template:
+    metadata:
+      labels:
+        app: search-api
+    spec:
+      containers:
+        - name: search-api
+          image: search-system:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: search-system-secrets
+                  key: POSTGRES_PASSWORD
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: search-system-secrets
+                  key: REDIS_PASSWORD
+            - name: TLS_CERT_FILE
+              valueFrom:
+                secretKeyRef:
+                  name: search-system-secrets
+                  key: TLS_CERT_FILE
+            - name: TLS_KEY_FILE
+              valueFrom:
+                secretKeyRef:
+                  name: search-system-secrets
+                  key: TLS_KEY_FILE
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/config
+            - name: bleve-data
+              mountPath: /data/bleve
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+      volumes:
+        - name: config-volume
+          configMap:
+            name: search-system-config
+        - name: bleve-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: search-api
+  namespace: search-system
+spec:
+  selector:
+    app: search-api
+  type: NodePort
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      nodePort: 30080   # bound to kind-config.yaml extraPortMappings → localhost:8080

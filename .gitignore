@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Search system runtime data (bleve indexes)
+search-system/data/
+
+# Log files
+search-system/server.log
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build artifacts / binaries
+*.exe
+*.out
+*.bin
+*.o
+*.so
+*.dylib
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code
+.claude/

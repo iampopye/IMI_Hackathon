@@ -1,0 +1,133 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "annotations": { "list": [] },
+  "description": "Search tier routing, cache hit rates, and latencies by tier",
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "sum(rate(search_requests_total[1m])) by (tier)",
+          "legendFormat": "tier={{tier}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Search Request Rate by Tier (req/s)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 }, "unit": "s" },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(search_duration_seconds_bucket[1m])) by (le, tier))",
+          "legendFormat": "p50 {{tier}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(search_duration_seconds_bucket[1m])) by (le, tier))",
+          "legendFormat": "p95 {{tier}}",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(search_duration_seconds_bucket[1m])) by (le, tier))",
+          "legendFormat": "p99 {{tier}}",
+          "refId": "C"
+        }
+      ],
+      "title": "Search Latency by Tier (p50 / p95 / p99)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "sum(rate(cache_hits_total[1m])) by (layer)",
+          "legendFormat": "hits {{layer}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(cache_misses_total[1m])) by (layer)",
+          "legendFormat": "misses {{layer}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Cache Hits vs Misses by Layer (L1 / L2)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 0.5 }, { "color": "green", "value": 0.8 }] }, "unit": "percentunit", "min": 0, "max": 1 },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+      "targets": [
+        {
+          "expr": "sum(rate(cache_hits_total{layer=\"L1\"}[5m])) / (sum(rate(cache_hits_total{layer=\"L1\"}[5m])) + sum(rate(cache_misses_total{layer=\"L1\"}[5m])))",
+          "legendFormat": "L1 Hit Rate",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(cache_hits_total{layer=\"L2\"}[5m])) / (sum(rate(cache_hits_total{layer=\"L2\"}[5m])) + sum(rate(cache_misses_total{layer=\"L2\"}[5m])))",
+          "legendFormat": "L2 Hit Rate",
+          "refId": "B"
+        }
+      ],
+      "title": "Cache Hit Rate (5m window)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2 } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "sum(rate(search_requests_total{status=\"error\"}[1m])) by (tier)",
+          "legendFormat": "errors {{tier}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Search Errors by Tier",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "tags": ["search-system", "search"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "02 — Search Performance",
+  "uid": "search-performance",
+  "version": 1
+}

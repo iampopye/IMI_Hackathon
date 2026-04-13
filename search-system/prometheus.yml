@@ -1,0 +1,9 @@
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: search-api
+    static_configs:
+      - targets: ["172.17.0.1:8080"]
+    metrics_path: /metrics
