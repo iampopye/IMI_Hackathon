@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Adaptive Search — a research prototype in Go">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#150F33"/>
+      <stop offset="55%" stop-color="#1B1442"/>
+      <stop offset="100%" stop-color="#0F0C21"/>
+    </linearGradient>
+    <linearGradient id="rule" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#A594FF"/>
+      <stop offset="70%" stop-color="#FF8A7A"/>
+      <stop offset="100%" stop-color="#FF8A7A" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Tier grid motif: three bands of increasing density = small / medium / large -->
+  <g opacity="0.16" fill="#A594FF">
+    <g>
+      <rect x="812" y="150" width="26" height="26" rx="4"/>
+      <rect x="854" y="150" width="26" height="26" rx="4"/>
+      <rect x="812" y="192" width="26" height="26" rx="4"/>
+    </g>
+    <g>
+      <rect x="924" y="150" width="18" height="18" rx="3"/>
+      <rect x="952" y="150" width="18" height="18" rx="3"/>
+      <rect x="980" y="150" width="18" height="18" rx="3"/>
+      <rect x="924" y="178" width="18" height="18" rx="3"/>
+      <rect x="952" y="178" width="18" height="18" rx="3"/>
+      <rect x="924" y="206" width="18" height="18" rx="3"/>
+    </g>
+    <g>
+      <rect x="1030" y="150" width="11" height="11" rx="2"/>
+      <rect x="1049" y="150" width="11" height="11" rx="2"/>
+      <rect x="1068" y="150" width="11" height="11" rx="2"/>
+      <rect x="1087" y="150" width="11" height="11" rx="2"/>
+      <rect x="1030" y="169" width="11" height="11" rx="2"/>
+      <rect x="1049" y="169" width="11" height="11" rx="2"/>
+      <rect x="1068" y="169" width="11" height="11" rx="2"/>
+      <rect x="1087" y="169" width="11" height="11" rx="2"/>
+      <rect x="1030" y="188" width="11" height="11" rx="2"/>
+      <rect x="1049" y="188" width="11" height="11" rx="2"/>
+      <rect x="1068" y="188" width="11" height="11" rx="2"/>
+      <rect x="1030" y="207" width="11" height="11" rx="2"/>
+      <rect x="1049" y="207" width="11" height="11" rx="2"/>
+      <rect x="1030" y="226" width="11" height="11" rx="2"/>
+    </g>
+  </g>
+
+  <!-- Magnifier mark -->
+  <g transform="translate(80,74)">
+    <circle cx="27" cy="27" r="21" fill="none" stroke="#A594FF" stroke-width="6"/>
+    <path d="M43 43L60 60" stroke="#A594FF" stroke-width="6" stroke-linecap="round"/>
+    <path d="M17 27h20M20 18.5h14M20 35.5h14" stroke="#FF8A7A" stroke-width="4.5" stroke-linecap="round"/>
+  </g>
+
+  <text x="164" y="118" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        font-size="30" font-weight="700" fill="#ECEAF8" letter-spacing="0.5">Adaptive Search</text>
+
+  <text x="80" y="248" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+        font-size="21" font-weight="700" fill="#FF8A7A" letter-spacing="3.2">RESEARCH PROTOTYPE</text>
+
+  <text font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        font-size="72" font-weight="800" fill="#ECEAF8" letter-spacing="-2.4">
+    <tspan x="80" y="340">Can a search service</tspan>
+    <tspan x="80" y="420">choose its own index?</tspan>
+  </text>
+
+  <rect x="80" y="456" width="420" height="5" rx="2.5" fill="url(#rule)"/>
+
+  <text font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        font-size="27" font-weight="500" fill="#A9A2CC">
+    <tspan x="80" y="512">A Go prototype that re-selects its index tier, cache TTL</tspan>
+    <tspan x="80" y="550">and warm set from live dataset characteristics.</tspan>
+  </text>
+
+  <text x="80" y="596" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+        font-size="20" font-weight="600" fill="#7F78A8">github.com/iampopye/IMI_Hackathon &#183; MIT</text>
+</svg>

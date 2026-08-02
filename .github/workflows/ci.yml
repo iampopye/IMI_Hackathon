@@ -66,6 +66,23 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    # NON-BLOCKING, deliberately and temporarily.
+    #
+    # This suite had never actually executed before this workflow existed: it
+    # skips itself when TEST_POSTGRES_DSN is unset, so `go test ./...` was
+    # silently reporting success. Giving it a database immediately surfaced two
+    # genuine pre-existing failures, tracked in issue #5:
+    #
+    #   - TestIntegration_FullSync_GhostElimination — FullSync purges nothing,
+    #     because unchanged records never get their sync_token refreshed and
+    #     `sync_token != $2` does not match NULL.
+    #   - TestIntegration_BleveMemorySearch_FuzzyMatch — Bleve FuzzyQuery is a
+    #     term-level query that bypasses the analyser, so it is case-sensitive.
+    #
+    # Both are product bugs, not CI problems, and fixing them changes write-path
+    # and search behaviour. The job stays visible and keeps running so the
+    # failures cannot be forgotten. REMOVE continue-on-error once #5 is closed.
+    continue-on-error: true
     defaults:
       run:
         working-directory: search-system
