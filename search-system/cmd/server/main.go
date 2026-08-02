@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/api"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/cache"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/config"
@@ -21,6 +20,7 @@ import (
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/reconciler"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/search"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/upsert"
+	"github.com/rs/zerolog"
 )
 
 func main() {

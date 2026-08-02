@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/rs/zerolog"
-	"github.com/segmentio/kafka-go"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/metrics"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/search"
+	"github.com/rs/zerolog"
+	"github.com/segmentio/kafka-go"
 )
 
 // ESConsumer keeps Elasticsearch in sync by processing two Kafka topics:

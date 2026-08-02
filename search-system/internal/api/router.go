@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/config"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/dataset"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/metrics"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/outbox"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/search"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/upsert"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // corsMiddleware allows cross-origin requests from the Next.js dashboard.

@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/lib/pq"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/outbox"
+	"github.com/lib/pq"
 )
 
 // batchUpsertSQL performs an atomic bulk upsert via unnest arrays.

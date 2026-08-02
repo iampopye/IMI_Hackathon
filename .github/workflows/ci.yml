@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# No implicit token scope. Each job opts in to exactly what it needs.
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Go backend: format, vet, build, unit + chaos tests under the race detector ──
+  go:
+    name: Go (build, vet, test)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: search-system
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          # Single source of truth for the Go version: search-system/go.mod (1.25.0).
+          go-version-file: search-system/go.mod
+          cache-dependency-path: search-system/go.sum
+
+      - name: gofmt
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::These files are not gofmt-clean:"
+            echo "$unformatted"
+            gofmt -d .
+            exit 1
+          fi
+          echo "All files are gofmt-clean."
+
+      - name: go build
+        run: go build ./...
+
+      - name: go vet
+        run: go vet ./...
+
+      # Bleve pulls in cgo (go-faiss, bbolt mmap) and -race needs cgo anyway.
+      - name: go test -race
+        run: go test ./... -race -count=1
+        env:
+          CGO_ENABLED: "1"
+
+  # ── Integration + chaos suites against a real PostgreSQL ──────────────────────
+  # The DB-backed tests skip themselves unless TEST_POSTGRES_DSN is set (see
+  # internal/integration/integration_test.go and internal/db/migrate_test.go), so
+  # this job exists purely to give them a database and actually run them.
+  # No Redis service: nothing in the test tree reads a Redis address from the
+  # environment — the cache tests exercise the in-process L1 cache directly.
+  integration:
+    name: Integration (PostgreSQL 16)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    # NON-BLOCKING, deliberately and temporarily.
+    #
+    # This suite had never actually executed before this workflow existed: it
+    # skips itself when TEST_POSTGRES_DSN is unset, so `go test ./...` was
+    # silently reporting success. Giving it a database immediately surfaced two
+    # genuine pre-existing failures, tracked in issue #5:
+    #
+    #   - TestIntegration_FullSync_GhostElimination — FullSync purges nothing,
+    #     because unchanged records never get their sync_token refreshed and
+    #     `sync_token != $2` does not match NULL.
+    #   - TestIntegration_BleveMemorySearch_FuzzyMatch — Bleve FuzzyQuery is a
+    #     term-level query that bypasses the analyser, so it is case-sensitive.
+    #
+    # Both are product bugs, not CI problems, and fixing them changes write-path
+    # and search behaviour. The job stays visible and keeps running so the
+    # failures cannot be forgotten. REMOVE continue-on-error once #5 is closed.
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: search-system
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: searchuser
+          POSTGRES_PASSWORD: searchpass
+          POSTGRES_DB: searchdb_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U searchuser -d searchdb_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: search-system/go.mod
+          cache-dependency-path: search-system/go.sum
+
+      - name: Run DB-backed tests
+        run: go test ./internal/db/... ./internal/integration/... -race -count=1 -v
+        env:
+          CGO_ENABLED: "1"
+          TEST_POSTGRES_DSN: "host=localhost port=5432 user=searchuser password=searchpass dbname=searchdb_test sslmode=disable"
+
+  # ── Next.js dashboard ─────────────────────────────────────────────────────────
+  ui:
+    name: UI (Next.js build)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: search-ui
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: search-ui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  # ── Known-vulnerability scan of the Go dependency tree ────────────────────────
+  govulncheck:
+    name: govulncheck
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # Third-party action: pinned to a full commit SHA.
+      - uses: golang/govulncheck-action@032d45514ae346b1db93c04b0c90b841c370344f # v1.1.0
+        with:
+          go-version-file: search-system/go.mod
+          work-dir: search-system
+          go-package: ./...

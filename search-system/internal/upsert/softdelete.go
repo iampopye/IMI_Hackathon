@@ -10,11 +10,11 @@ import (
 
 // SyncResult summarises a completed FullSync operation.
 type SyncResult struct {
-	DatasetID  string      `json:"dataset_id"`
-	SyncToken  string      `json:"sync_token"`
+	DatasetID  string       `json:"dataset_id"`
+	SyncToken  string       `json:"sync_token"`
 	Upserted   UpsertResult `json:"upserted"`
-	Deleted    int64       `json:"deleted"`
-	DurationMs int64       `json:"duration_ms"`
+	Deleted    int64        `json:"deleted"`
+	DurationMs int64        `json:"duration_ms"`
 }
 
 // generateSyncToken produces a cryptographically random 16-byte hex token.

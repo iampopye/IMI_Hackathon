@@ -3,10 +3,10 @@ package pipeline
 import (
 	"context"
 
-	"github.com/rs/zerolog"
-	"github.com/segmentio/kafka-go"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/cache"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/search"
+	"github.com/rs/zerolog"
+	"github.com/segmentio/kafka-go"
 )
 
 // CacheConsumer invalidates search result caches when records are deleted.
@@ -17,7 +17,7 @@ import (
 // redisCache may be nil (only in-process cache is used in that case).
 type CacheConsumer struct {
 	deletedReader *kafka.Reader
-	redisCache    *cache.RedisCache   // nil when Redis is unavailable
+	redisCache    *cache.RedisCache // nil when Redis is unavailable
 	searchRouter  *search.SmartSearchRouter
 	log           zerolog.Logger
 }

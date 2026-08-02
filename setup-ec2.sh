@@ -4,6 +4,9 @@
 
 set -e
 
+# Root of the checkout. Override if you cloned somewhere else.
+PROJECT_DIR="${PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+
 echo "=== Installing Docker ==="
 if ! command -v docker &> /dev/null; then
     curl -fsSL https://get.docker.com | sh
@@ -28,7 +31,7 @@ echo "=== Installing Git ==="
 apt-get install -y git
 
 echo "=== Setting up the project ==="
-cd /root/IMI_Hackathon/search-system
+cd $PROJECT_DIR/search-system
 
 # Create config from example
 cp config/config.yaml.example config/config.yaml
@@ -48,7 +51,7 @@ docker ps
 
 echo "=== Building and starting the API server ==="
 # Create data directory for Bleve
-mkdir -p /root/IMI_Hackathon/search-system/data/bleve
+mkdir -p $PROJECT_DIR/search-system/data/bleve
 
 # Run the server in the background
 nohup go run ./cmd/server > /root/server.log 2>&1 &

@@ -50,7 +50,7 @@ func TestIsStable(t *testing.T) {
 	}{
 		{0.0, false},
 		{0.69, false},
-		{0.70, true},   // exactly at threshold → stable
+		{0.70, true}, // exactly at threshold → stable
 		{0.80, true},
 		{1.00, true},
 	}

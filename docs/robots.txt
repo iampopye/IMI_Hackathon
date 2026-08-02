@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://iampopye.github.io/IMI_Hackathon/sitemap.xml

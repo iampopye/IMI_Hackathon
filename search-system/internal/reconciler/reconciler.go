@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/rs/zerolog"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/metrics"
+	"github.com/rs/zerolog"
 )
 
 const (

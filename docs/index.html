@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adaptive Search — a research prototype in Go</title>
+<meta name="description" content="A research prototype asking whether a search service can pick its own indexing strategy from live data: index tier, cache TTL and warm set, chosen at runtime.">
+<link rel="canonical" href="https://iampopye.github.io/IMI_Hackathon/">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Adaptive Search">
+<meta property="og:title" content="Adaptive Search — a research prototype in Go">
+<meta property="og:description" content="Can a search service select its own indexing strategy from live dataset characteristics? A Go prototype that re-picks its index tier, cache TTL and warm set at runtime.">
+<meta property="og:url" content="https://iampopye.github.io/IMI_Hackathon/">
+<meta property="og:image" content="https://iampopye.github.io/IMI_Hackathon/og.svg">
+<meta property="og:image:type" content="image/svg+xml">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Adaptive Search — can a search service choose its own index?">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:creator" content="@mrtechgarg">
+<meta name="twitter:title" content="Adaptive Search — a research prototype in Go">
+<meta name="twitter:description" content="Can a search service select its own indexing strategy from live dataset characteristics? A Go prototype that re-picks its index tier, cache TTL and warm set at runtime.">
+<meta name="twitter:image" content="https://iampopye.github.io/IMI_Hackathon/og.svg">
+<meta name="theme-color" content="#4F3BD4">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  "name": "Adaptive Search",
+  "alternateName": "IMI_Hackathon",
+  "description": "A research prototype exploring whether a search service can select its own indexing strategy from live dataset characteristics, adapting index tier, cache TTL and warm set at runtime.",
+  "codeRepository": "https://github.com/iampopye/IMI_Hackathon",
+  "url": "https://iampopye.github.io/IMI_Hackathon/",
+  "programmingLanguage": [
+    { "@type": "ComputerLanguage", "name": "Go" },
+    { "@type": "ComputerLanguage", "name": "TypeScript" }
+  ],
+  "runtimePlatform": "Go 1.25",
+  "license": "https://opensource.org/licenses/MIT",
+  "applicationCategory": "DeveloperApplication",
+  "keywords": "adaptive systems, search, query optimization, research prototype, benchmarking, chaos engineering, Go, PostgreSQL, Elasticsearch",
+  "author": {
+    "@type": "Person",
+    "name": "Karan Garg",
+    "url": "https://github.com/iampopye",
+    "sameAs": [
+      "https://github.com/iampopye",
+      "https://x.com/mrtechgarg",
+      "https://www.linkedin.com/in/karan-garg-tech/"
+    ]
+  },
+  "maintainer": {
+    "@type": "Person",
+    "name": "Karan Garg",
+    "url": "https://github.com/iampopye"
+  }
+}
+</script>
+
+<script>
+  // Applied before first paint so the chosen theme never flashes.
+  (function () {
+    try {
+      var t = localStorage.getItem('as-theme');
+      if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
+
+<style>
+  /* ── Palette ────────────────────────────────────────────────────────────────
+     Indigo-violet + coral on cool paper. Every foreground/background pair below
+     was checked against WCAG 2.1 AA; the lowest ratio used anywhere is 5.24:1
+     (light coral on paper) and body text runs 16.7:1 light / 16.0:1 dark.     */
+  :root {
+    --bg: #FBFAFF;
+    --surface: #FFFFFF;
+    --surface-2: #F2F0FC;
+    --text: #1A1636;
+    --muted: #575074;
+    --primary: #4F3BD4;
+    --accent: #C0392B;
+    --border: #DEDAF2;
+    --shadow: 26 22 54;
+    --grid: #E6E2F7;
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #100D22;
+      --surface: #1A1638;
+      --surface-2: #221D45;
+      --text: #ECEAF8;
+      --muted: #A9A2CC;
+      --primary: #A594FF;
+      --accent: #FF8A7A;
+      --border: #322B5C;
+      --shadow: 0 0 0;
+      --grid: #241F4A;
+      color-scheme: dark;
+    }
+  }
+
+  /* The toggle must beat the media query in both directions. */
+  :root[data-theme="light"] {
+    --bg: #FBFAFF; --surface: #FFFFFF; --surface-2: #F2F0FC;
+    --text: #1A1636; --muted: #575074; --primary: #4F3BD4;
+    --accent: #C0392B; --border: #DEDAF2; --shadow: 26 22 54; --grid: #E6E2F7;
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    --bg: #100D22; --surface: #1A1638; --surface-2: #221D45;
+    --text: #ECEAF8; --muted: #A9A2CC; --primary: #A594FF;
+    --accent: #FF8A7A; --border: #322B5C; --shadow: 0 0 0; --grid: #241F4A;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+                 "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  code, kbd, pre, .mono {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+                 "Liberation Mono", monospace;
+  }
+
+  .wrap { width: 100%; max-width: 60rem; margin: 0 auto; padding: 0 1.25rem; }
+
+  a { color: var(--primary); text-underline-offset: .18em; }
+  a:hover { text-decoration-thickness: 2px; }
+
+  :focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  .skip {
+    position: absolute; left: -9999px;
+    background: var(--primary); color: #fff;
+    padding: .7rem 1.1rem; border-radius: 0 0 8px 0; z-index: 100;
+    font-weight: 600; text-decoration: none;
+  }
+  .skip:focus { left: 0; top: 0; }
+
+  /* ── Header ─────────────────────────────────────────────────────────────── */
+  header.site {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .bar { display: flex; align-items: center; gap: 1rem; padding: .7rem 0; }
+  .brand {
+    display: flex; align-items: center; gap: .6rem;
+    font-weight: 700; letter-spacing: -.02em; text-decoration: none; color: var(--text);
+    font-size: 1.02rem;
+  }
+  .brand svg { flex: none; }
+  .bar nav { margin-left: auto; display: flex; align-items: center; gap: .35rem; }
+  .bar nav a.navlink {
+    color: var(--muted); text-decoration: none; font-size: .92rem;
+    padding: .4rem .6rem; border-radius: 7px; font-weight: 500;
+  }
+  .bar nav a.navlink:hover { color: var(--text); background: var(--surface-2); }
+  @media (max-width: 40rem) { .bar nav a.navlink { display: none; } }
+
+  .iconbtn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 2.3rem; height: 2.3rem; flex: none;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text);
+    cursor: pointer; padding: 0;
+  }
+  .iconbtn:hover { background: var(--surface-2); }
+  a.iconbtn { text-decoration: none; }
+  #sun { display: none; }
+  :root[data-theme="dark"] #sun { display: block; }
+  :root[data-theme="dark"] #moon { display: none; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) #sun { display: block; }
+    :root:not([data-theme="light"]) #moon { display: none; }
+  }
+
+  /* ── Hero ───────────────────────────────────────────────────────────────── */
+  .hero { padding: 3.5rem 0 2.5rem; }
+  .tag {
+    display: inline-flex; align-items: center; gap: .45rem;
+    font-size: .74rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    padding: .3rem .7rem; border-radius: 100px;
+  }
+  h1 {
+    font-size: clamp(2rem, 6.2vw, 3.4rem);
+    line-height: 1.08; letter-spacing: -.035em;
+    margin: 1.1rem 0 0; font-weight: 800;
+  }
+  .lede {
+    font-size: clamp(1.05rem, 2.3vw, 1.3rem);
+    color: var(--muted); max-width: 44rem; margin: 1.1rem 0 0;
+  }
+  .lede strong { color: var(--text); font-weight: 650; }
+
+  .cta { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 1.9rem; }
+  .btn {
+    display: inline-flex; align-items: center; gap: .5rem;
+    padding: .68rem 1.15rem; border-radius: 9px;
+    font-weight: 600; font-size: .95rem; text-decoration: none;
+    border: 1px solid var(--border); color: var(--text); background: var(--surface);
+  }
+  .btn:hover { background: var(--surface-2); }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+  :root[data-theme="dark"] .btn.primary { color: #100D22; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .btn.primary { color: #100D22; }
+  }
+  .btn.primary:hover { filter: brightness(1.08); }
+
+  .facts {
+    display: grid; gap: .8rem; margin-top: 2.4rem;
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  }
+  .fact {
+    border: 1px solid var(--border); border-radius: 11px;
+    background: var(--surface); padding: .85rem .95rem;
+  }
+  .fact b { display: block; font-size: 1.45rem; letter-spacing: -.03em; line-height: 1.2; }
+  .fact span { font-size: .8rem; color: var(--muted); }
+
+  /* ── Sections ───────────────────────────────────────────────────────────── */
+  section { padding: 3rem 0; border-top: 1px solid var(--border); }
+  h2 {
+    font-size: clamp(1.45rem, 3.4vw, 1.95rem);
+    letter-spacing: -.028em; margin: 0 0 .5rem; font-weight: 750;
+  }
+  h2 .num {
+    font-family: ui-monospace, monospace; color: var(--accent);
+    font-size: .7em; margin-right: .55rem; font-weight: 700;
+  }
+  h3 { font-size: 1.08rem; margin: 2rem 0 .4rem; letter-spacing: -.015em; }
+  .sub { color: var(--muted); max-width: 46rem; margin: 0 0 1.6rem; }
+  p { margin: 0 0 1rem; }
+  .prose { max-width: 46rem; }
+
+  .card {
+    border: 1px solid var(--border); border-radius: 13px;
+    background: var(--surface); padding: 1.3rem 1.4rem;
+  }
+  .cards { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
+  .card h4 {
+    margin: 0 0 .45rem; font-size: 1rem; display: flex; align-items: center; gap: .5rem;
+  }
+  .card p:last-child { margin-bottom: 0; }
+  .card .k {
+    font-family: ui-monospace, monospace; font-size: .74rem; font-weight: 700;
+    color: #fff; background: var(--primary);
+    width: 1.5rem; height: 1.5rem; flex: none;
+    display: inline-flex; align-items: center; justify-content: center; border-radius: 5px;
+  }
+  :root[data-theme="dark"] .card .k { color: #100D22; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .card .k { color: #100D22; }
+  }
+
+  .scroller { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; min-width: 34rem; }
+  th, td { text-align: left; padding: .6rem .7rem; border-bottom: 1px solid var(--border); }
+  th { font-size: .76rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  tbody tr:last-child td { border-bottom: 0; }
+  td code { font-size: .87em; }
+
+  code:not(pre code) {
+    background: var(--surface-2); padding: .12em .38em;
+    border-radius: 4px; font-size: .88em;
+  }
+
+  pre {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 11px; padding: 1rem 1.1rem; overflow-x: auto;
+    font-size: .86rem; line-height: 1.6; margin: 0;
+  }
+  pre .c { color: var(--muted); }
+
+  figure { margin: 0; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption { color: var(--muted); font-size: .85rem; margin-top: .7rem; }
+
+  ul.clean { list-style: none; padding: 0; margin: 0; }
+  ul.clean li {
+    padding-left: 1.5rem; position: relative; margin-bottom: .6rem;
+  }
+  ul.clean li::before {
+    content: ""; position: absolute; left: .3rem; top: .62em;
+    width: .42rem; height: .42rem; border-radius: 50%; background: var(--primary);
+  }
+  ul.warn li::before { background: var(--accent); border-radius: 1px; }
+
+  .note {
+    border-left: 3px solid var(--accent);
+    background: color-mix(in srgb, var(--accent) 7%, transparent);
+    padding: .9rem 1.1rem; border-radius: 0 9px 9px 0; margin: 1.4rem 0;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note strong { color: var(--text); }
+
+  /* ── Maintainer ─────────────────────────────────────────────────────────── */
+  .who { display: flex; gap: 1.2rem; align-items: flex-start; flex-wrap: wrap; }
+  .who .mark {
+    width: 3.4rem; height: 3.4rem; border-radius: 12px; flex: none;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 1.15rem; letter-spacing: -.02em;
+  }
+  :root[data-theme="dark"] .who .mark { color: #100D22; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .who .mark { color: #100D22; }
+  }
+  .who .body { flex: 1 1 16rem; min-width: 0; }
+  .links { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .8rem; }
+  .links a {
+    display: inline-flex; align-items: center; gap: .42rem;
+    font-size: .88rem; text-decoration: none; font-weight: 550;
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: .38rem .72rem; color: var(--text); background: var(--surface);
+  }
+  .links a:hover { background: var(--surface-2); }
+
+  footer.site {
+    border-top: 1px solid var(--border); padding: 2rem 0 3rem;
+    color: var(--muted); font-size: .88rem;
+  }
+  .footrow { display: flex; flex-wrap: wrap; gap: .6rem 1.4rem; align-items: center; }
+  .footrow .sep { margin-left: auto; }
+  @media (max-width: 34rem) { .footrow .sep { margin-left: 0; } }
+
+  @media (max-width: 22.5rem) {
+    body { font-size: 16px; }
+    .wrap { padding: 0 .9rem; }
+  }
+</style>
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site">
+  <div class="wrap bar">
+    <a class="brand" href="#top">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="10.5" cy="10.5" r="6.5" stroke="var(--primary)" stroke-width="2"/>
+        <path d="M15.5 15.5L21 21" stroke="var(--primary)" stroke-width="2" stroke-linecap="round"/>
+        <path d="M7 10.5h7M8.4 7.6h4.2M8.4 13.4h4.2" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      Adaptive Search
+    </a>
+    <nav>
+      <a class="navlink" href="#question">Question</a>
+      <a class="navlink" href="#mechanism">Mechanism</a>
+      <a class="navlink" href="#architecture">Architecture</a>
+      <a class="navlink" href="#findings">Findings</a>
+      <a class="navlink" href="#run">Run it</a>
+      <button class="iconbtn" id="theme" type="button" aria-label="Switch between dark and light theme">
+        <svg id="moon" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+        <svg id="sun" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="2"/>
+          <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.1 5.1l1.4 1.4M17.5 17.5l1.4 1.4M18.9 5.1l-1.4 1.4M6.5 17.5l-1.4 1.4"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <a class="iconbtn" href="https://github.com/iampopye/IMI_Hackathon" aria-label="Adaptive Search on GitHub">
+        <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 014 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+      </a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <div id="top"></div>
+
+  <!-- ── Hero ──────────────────────────────────────────────────────────── -->
+  <div class="wrap hero">
+    <span class="tag">Research prototype</span>
+    <h1>Can a search service choose its own index?</h1>
+    <p class="lede">
+      Search systems are normally told which strategy to use at deploy time. That
+      decision is correct on the day you make it and progressively wrong afterwards.
+      This is a Go prototype that moves the decision into the running system —
+      <strong>re-selecting its index backend, its cache lifetime and its warm set from
+      live dataset characteristics</strong>.
+    </p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/iampopye/IMI_Hackathon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 014 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+        Read the source
+      </a>
+      <a class="btn" href="#limits">What it does <em>not</em> show</a>
+    </div>
+
+    <div class="facts">
+      <div class="fact"><b>3</b><span>adaptive mechanisms</span></div>
+      <div class="fact"><b>13</b><span>Prometheus metrics</span></div>
+      <div class="fact"><b>4</b><span>Grafana dashboards</span></div>
+      <div class="fact"><b>70</b><span>tests, 11 benchmarks</span></div>
+    </div>
+  </div>
+
+  <!-- ── The question ──────────────────────────────────────────────────── -->
+  <section id="question">
+    <div class="wrap prose">
+      <h2><span class="num">01</span>The question</h2>
+      <p>
+        You decide up front that a corpus is “small” and belongs in an in-process
+        index, or “large” and belongs in Elasticsearch. That gets baked into config.
+        But datasets grow, go dormant, get rewritten and change shape independently
+        of your deploy cycle — so the configuration drifts away from reality.
+      </p>
+      <p>
+        The investigation asks what happens when that decision moves out of config
+        and into the running system: <strong>which signals are cheap enough to drive it,
+        and what breaks when a system is allowed to change its own mind?</strong>
+      </p>
+      <p>Two things mattered more than expected, and both shaped the code:</p>
+      <ul class="clean">
+        <li>
+          <strong>Getting the signal cheaply is the hard part, not acting on it.</strong>
+          The obvious implementation reads <code>COUNT(*)</code> per dataset on the query
+          path — an O(n) scan that dominates everything else. It is replaced by a
+          trigger-maintained counter table for an O(1) read.
+        </li>
+        <li>
+          <strong>A system that reacts instantly oscillates.</strong> A dataset sitting on
+          a tier boundary flaps between backends on every write, and each flap costs
+          an index rebuild. Adaptation needs damping to be worth anything.
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ── Mechanism ─────────────────────────────────────────────────────── -->
+  <section id="mechanism">
+    <div class="wrap">
+      <h2><span class="num">02</span>What “adaptive” concretely means</h2>
+      <p class="sub">
+        Three independent mechanisms, each driven by observed behaviour rather than
+        configuration. This is the substance of the prototype.
+      </p>
+
+      <div class="cards">
+        <div class="card">
+          <h4><span class="k">1</span> Index tier, by size</h4>
+          <p>
+            The profiler reads the O(1) record count and maps it to a tier, each with
+            its own engine and fallback chain. Thresholds are configurable.
+          </p>
+          <div class="scroller">
+            <table>
+              <thead><tr><th>Tier</th><th>Records</th><th>Engine</th></tr></thead>
+              <tbody>
+                <tr><td><code>small</code></td><td>&lt; 100K</td><td>Bleve in-memory</td></tr>
+                <tr><td><code>medium</code></td><td>100K – 5M</td><td>Bleve file-backed</td></tr>
+                <tr><td><code>large</code></td><td>≥ 5M</td><td>Elasticsearch</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p style="margin-top:.9rem">
+            The damping is the interesting part: an upgrade requires the dataset to be
+            observed above the threshold for <strong>5 consecutive evaluations</strong>
+            before it commits. Downgrades are immediate. A dataset hovering at exactly
+            100,000 records stays put instead of rebuilding on every write.
+          </p>
+        </div>
+
+        <div class="card">
+          <h4><span class="k">2</span> Cache TTL, by volatility</h4>
+          <p>
+            Every dataset carries a <em>stability score</em> in <code>[0,&nbsp;1]</code>,
+            maintained by a monitor ticking once a minute:
+          </p>
+          <ul class="clean">
+            <li>A quiet cycle <strong>adds 0.05</strong> — linear recovery.</li>
+            <li>A write <strong>multiplies by 0.80</strong> — geometric punishment, so a
+                burst collapses the score fast while one write barely dents it.</li>
+            <li>At <strong>≥ 0.70</strong> the dataset counts as stable.</li>
+          </ul>
+          <p style="margin-top:.9rem">
+            That score picks the cache lifetime directly: <strong>10 minutes</strong> for a
+            stable dataset, <strong>30 seconds</strong> for a volatile one. Nothing declares
+            a dataset stable — it earns the longer TTL by not changing.
+          </p>
+        </div>
+
+        <div class="card">
+          <h4><span class="k">3</span> Warm set, by access history</h4>
+          <p>
+            Every search appends to an access log on a fire-and-forget goroutine. At
+            startup the service preloads the <strong>50 most-recently-accessed datasets</strong>
+            and builds their indexes <em>before</em> accepting traffic.
+          </p>
+          <p>
+            The warm set is therefore derived from real usage rather than a
+            hand-maintained list, and rows older than 30 days are purged by the
+            background reconciler.
+          </p>
+        </div>
+      </div>
+
+      <div class="note">
+        <p>
+          <strong>A read-your-own-writes guard sits on top.</strong> Any write stamps a
+          30-second flag in Redis, and while it exists the search path skips both cache
+          layers entirely rather than risk serving a stale result to the client that
+          just wrote.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Architecture ──────────────────────────────────────────────────── -->
+  <section id="architecture">
+    <div class="wrap">
+      <h2><span class="num">03</span>Architecture</h2>
+      <p class="sub">
+        PostgreSQL is the only source of truth. Every search engine is a derived,
+        disposable index that can be rebuilt from it — and Redis, Elasticsearch and
+        Kafka are each individually optional.
+      </p>
+
+      <figure>
+        <svg viewBox="0 0 880 470" role="img"
+             aria-label="Architecture diagram. A Next.js dashboard and API clients call the Go service over HTTP. The API passes queries to the SmartSearchRouter, which first checks a read-your-own-writes flag, then an in-process L1 cache, then a Redis L2 cache. On a miss the profiler reads an O(1) record count from PostgreSQL and selects a tier: small routes to Bleve in-memory, medium to Bleve file-backed, and large to Elasticsearch, each with a fallback chain. Writes go to PostgreSQL and an outbox table in one transaction; a poller drains the outbox to Kafka, whose consumers update Elasticsearch and invalidate the cache. A reconciler compares PostgreSQL and Elasticsearch counts and triggers a reindex on drift.">
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0L10 5L0 10z" fill="var(--muted)"/>
+            </marker>
+            <marker id="ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0L10 5L0 10z" fill="var(--accent)"/>
+            </marker>
+          </defs>
+
+          <style>
+            .bx { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+            .bx-p { fill: color-mix(in srgb, var(--primary) 12%, var(--surface)); stroke: var(--primary); stroke-width: 1.5; }
+            .bx-a { fill: color-mix(in srgb, var(--accent) 10%, var(--surface)); stroke: var(--accent); stroke-width: 1.5; }
+            .grp { fill: none; stroke: var(--border); stroke-width: 1.5; stroke-dasharray: 5 4; }
+            .t  { fill: var(--text); font-size: 13px; font-weight: 600;
+                  font-family: ui-sans-serif, system-ui, sans-serif; }
+            .ts { fill: var(--muted); font-size: 10.5px; font-weight: 500;
+                  font-family: ui-sans-serif, system-ui, sans-serif; }
+            .tl { fill: var(--muted); font-size: 10px; font-weight: 600;
+                  font-family: ui-monospace, monospace; }
+            .tg { fill: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .08em;
+                  font-family: ui-sans-serif, system-ui, sans-serif; }
+            .ln { stroke: var(--muted); stroke-width: 1.5; fill: none; marker-end: url(#ar); }
+            .ln-a { stroke: var(--accent); stroke-width: 1.5; fill: none; marker-end: url(#ar-a); }
+            .ln-d { stroke: var(--muted); stroke-width: 1.3; fill: none;
+                    stroke-dasharray: 4 4; marker-end: url(#ar); }
+          </style>
+
+          <!-- Clients -->
+          <rect class="bx" x="20" y="24" width="150" height="46" rx="9"/>
+          <text class="t" x="95" y="44" text-anchor="middle">search-ui</text>
+          <text class="ts" x="95" y="59" text-anchor="middle">Next.js 14 dashboard</text>
+
+          <!-- API -->
+          <rect class="bx-p" x="240" y="24" width="170" height="46" rx="9"/>
+          <text class="t" x="325" y="44" text-anchor="middle">Go API — Gin</text>
+          <text class="ts" x="325" y="59" text-anchor="middle">/search · /metrics</text>
+          <path class="ln" d="M172 47H236"/>
+          <text class="tl" x="204" y="39" text-anchor="middle">HTTP</text>
+
+          <!-- Router -->
+          <rect class="bx-p" x="240" y="104" width="170" height="42" rx="9"/>
+          <text class="t" x="325" y="130" text-anchor="middle">SmartSearchRouter</text>
+          <path class="ln" d="M325 72V100"/>
+
+          <!-- Cache group -->
+          <rect class="grp" x="20" y="94" width="186" height="118" rx="11"/>
+          <text class="tg" x="36" y="112">CACHE — OPTIONAL</text>
+          <rect class="bx" x="36" y="122" width="154" height="34" rx="8"/>
+          <text class="t" x="113" y="143" text-anchor="middle">L1 in-process LRU</text>
+          <rect class="bx" x="36" y="166" width="154" height="34" rx="8"/>
+          <text class="t" x="113" y="182" text-anchor="middle">L2 Redis</text>
+          <text class="ts" x="113" y="194" text-anchor="middle">10m stable / 30s volatile</text>
+          <path class="ln" d="M236 125H194"/>
+          <text class="tl" x="215" y="117" text-anchor="middle">1</text>
+          <path class="ln" d="M113 158V162"/>
+
+          <!-- RYOW -->
+          <rect class="bx-a" x="240" y="176" width="170" height="36" rx="8"/>
+          <text class="ts" x="325" y="192" text-anchor="middle">RYOW guard — 30s</text>
+          <text class="ts" x="325" y="205" text-anchor="middle">recent write? skip cache</text>
+          <path class="ln-a" d="M325 172V148" />
+
+          <!-- Profiler -->
+          <rect class="bx-p" x="454" y="104" width="176" height="42" rx="9"/>
+          <text class="t" x="542" y="122" text-anchor="middle">Profiler</text>
+          <text class="ts" x="542" y="136" text-anchor="middle">tier + 5× hysteresis</text>
+          <path class="ln" d="M414 125H450"/>
+          <text class="tl" x="432" y="117" text-anchor="middle">2</text>
+
+          <!-- Engines -->
+          <rect class="grp" x="440" y="164" width="420" height="96" rx="11"/>
+          <text class="tg" x="456" y="182">SEARCH ENGINES BY TIER</text>
+          <rect class="bx" x="456" y="192" width="124" height="52" rx="8"/>
+          <text class="t" x="518" y="213" text-anchor="middle">Bleve memory</text>
+          <text class="ts" x="518" y="229" text-anchor="middle">small</text>
+          <rect class="bx" x="592" y="192" width="124" height="52" rx="8"/>
+          <text class="t" x="654" y="213" text-anchor="middle">Bleve file</text>
+          <text class="ts" x="654" y="229" text-anchor="middle">medium</text>
+          <rect class="bx" x="728" y="192" width="116" height="52" rx="8"/>
+          <text class="t" x="786" y="213" text-anchor="middle">Elasticsearch</text>
+          <text class="ts" x="786" y="229" text-anchor="middle">large · optional</text>
+          <path class="ln" d="M542 150V188"/>
+
+          <!-- Postgres -->
+          <rect class="bx-p" x="240" y="300" width="200" height="52" rx="9"/>
+          <text class="t" x="340" y="322" text-anchor="middle">PostgreSQL</text>
+          <text class="ts" x="340" y="338" text-anchor="middle">the only source of truth</text>
+          <path class="ln" d="M542 150 L542 276 Q542 300 516 300 L446 300"/>
+          <text class="tl" x="560" y="250" text-anchor="start">O(1) count</text>
+          <path class="ln-d" d="M500 296 Q470 262 500 248"/>
+          <text class="tl" x="452" y="272" text-anchor="middle">rebuild</text>
+
+          <!-- Outbox -->
+          <rect class="bx-a" x="240" y="376" width="200" height="44" rx="9"/>
+          <text class="t" x="340" y="396" text-anchor="middle">outbox table</text>
+          <text class="ts" x="340" y="410" text-anchor="middle">same transaction as data</text>
+          <path class="ln-a" d="M340 358V372"/>
+
+          <!-- Poller + Kafka -->
+          <rect class="bx" x="486" y="376" width="140" height="44" rx="9"/>
+          <text class="t" x="556" y="396" text-anchor="middle">Poller → Kafka</text>
+          <text class="ts" x="556" y="410" text-anchor="middle">500ms · optional</text>
+          <path class="ln-a" d="M446 398H482"/>
+
+          <!-- Consumers -->
+          <rect class="bx" x="672" y="376" width="172" height="44" rx="9"/>
+          <text class="t" x="758" y="396" text-anchor="middle">Consumers</text>
+          <text class="ts" x="758" y="410" text-anchor="middle">index ES · invalidate cache</text>
+          <path class="ln" d="M630 398H668"/>
+
+          <!-- Reconciler -->
+          <rect class="bx-a" x="672" y="292" width="172" height="46" rx="9"/>
+          <text class="t" x="758" y="312" text-anchor="middle">Reconciler</text>
+          <text class="ts" x="758" y="327" text-anchor="middle">drift check → reindex</text>
+          <path class="ln-a" d="M758 372V344"/>
+          <path class="ln-a" d="M786 288V250"/>
+          <path class="ln" d="M672 315 L456 315" stroke-dasharray="4 4"/>
+          <text class="tl" x="580" y="308" text-anchor="middle">compare counts</text>
+
+          <!-- Write entry -->
+          <path class="ln-a" d="M325 72 L200 72 Q186 72 186 90 L186 330 Q186 348 206 348 L236 336"/>
+          <text class="tl" x="150" y="330" text-anchor="middle">writes</text>
+        </svg>
+        <figcaption>
+          Read path in violet, write path in coral. A query checks the RYOW flag, then
+          L1, then L2; on a miss the profiler picks a tier and the router dispatches to
+          that tier’s engine with a fallback chain behind it. Writes commit data and an
+          outbox row in one transaction, because a database commit and a broker publish
+          cannot be made atomic.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ── Findings ──────────────────────────────────────────────────────── -->
+  <section id="findings">
+    <div class="wrap">
+      <h2><span class="num">04</span>Method &amp; measurement</h2>
+      <p class="sub">
+        Reproducibility is the point of a research artifact, so the instrumentation is
+        the most reusable part of this prototype.
+      </p>
+
+      <div class="prose">
+        <p>
+          Thirteen Prometheus metrics are exposed on <code>/metrics</code>, and four
+          Grafana dashboards are auto-provisioned from the repository — <strong>API
+          Overview</strong>, <strong>Search Performance</strong>, <strong>Write
+          Pipeline</strong> and <strong>System Health</strong>.
+        </p>
+        <p>Three of those metrics carry the experimental weight:</p>
+      </div>
+
+      <div class="scroller">
+        <table>
+          <thead>
+            <tr><th>Metric</th><th>Labels</th><th>What it tells you</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>dataset_tier_transitions_total</code></td>
+              <td><code>from_tier</code>, <code>to_tier</code></td>
+              <td>The direct record of adaptation firing, and in which direction</td>
+            </tr>
+            <tr>
+              <td><code>search_duration_seconds</code></td>
+              <td><code>tier</code></td>
+              <td>Latency per tier — pair with the above to see if a transition helped</td>
+            </tr>
+            <tr>
+              <td><code>cache_hits_total</code> / <code>misses</code></td>
+              <td><code>layer</code> (L1/L2)</td>
+              <td>Whether the volatility-driven TTL is actually earning hits</td>
+            </tr>
+            <tr>
+              <td><code>reconciler_drift_detected_total</code></td>
+              <td>—</td>
+              <td>How often PostgreSQL and Elasticsearch genuinely diverged</td>
+            </tr>
+            <tr>
+              <td><code>upsert_records_total</code></td>
+              <td><code>status</code></td>
+              <td>Includes <code>skipped</code> — checksum-idempotent writes that did nothing</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Tests</h3>
+      <p class="prose">
+        70 tests and 11 benchmarks across 14 files. The <strong>chaos tests</strong> need no
+        database and target concurrency properties directly — LRU eviction under 10×
+        capacity pressure, and simultaneous insert/delete against the B-Tree index to
+        prove the absence of data races. They are close to meaningless without
+        <code>-race</code>.
+      </p>
+
+      <div class="note">
+        <p>
+          <strong>The DB-backed tests skip silently unless <code>TEST_POSTGRES_DSN</code>
+          is set.</strong> A green <code>go test ./...</code> on a machine with no database
+          does <em>not</em> mean the integration suite passed. CI runs it in a dedicated
+          job against a PostgreSQL 16 service container so the default-skip cannot hide
+          a failure.
+        </p>
+      </div>
+
+      <h3>What was <em>not</em> measured</h3>
+      <p class="prose">
+        The 11 benchmarks are micro-benchmarks — cache get/set, Bleve search over 100
+        and 1,000 documents, fuzzy versus exact query cost, and the SHA-256 helpers.
+        <strong>No benchmark results are committed to the repository, and none are quoted
+        here</strong>, because any numbers they produce are specific to the machine that
+        ran them.
+      </p>
+      <p class="prose">
+        More importantly, <strong>there is no benchmark of the adaptive tiering itself</strong>
+        — nothing measures what a tier transition costs, or whether the chosen tier beats
+        the alternatives at a given corpus size. That is the obvious next experiment and
+        it has not been run.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Run it ────────────────────────────────────────────────────────── -->
+  <section id="run">
+    <div class="wrap">
+      <h2><span class="num">05</span>Run it yourself</h2>
+      <p class="sub">
+        Only PostgreSQL is required. Redis, Elasticsearch and Kafka are each optional,
+        and the service degrades gracefully without them — which makes for a much
+        lighter loop than the full stack.
+      </p>
+
+      <pre><span class="c"># Clone and configure</span>
+git clone https://github.com/iampopye/IMI_Hackathon.git
+cd IMI_Hackathon/search-system
+cp config/config.yaml.example config/config.yaml
+<span class="c"># replace the two CHANGE_ME placeholders with searchuser / searchpass</span>
+
+<span class="c"># Minimum viable stack — or `docker compose up -d` for everything</span>
+docker compose up -d postgres redis
+go run ./cmd/server
+
+curl localhost:8080/health          <span class="c"># {"status":"healthy"}</span></pre>
+
+      <p class="prose" style="margin-top:1.4rem">
+        Migrations run automatically at startup. To watch the adaptation, search the
+        same dataset twice — the response’s <code>engine</code> field gains a
+        <code>+mem_cache</code> or <code>+redis_cache</code> suffix on the second call.
+        Write to the dataset and search immediately instead, and the RYOW guard bypasses
+        the cache entirely.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Limits ────────────────────────────────────────────────────────── -->
+  <section id="limits">
+    <div class="wrap">
+      <h2><span class="num">06</span>What this is not</h2>
+      <p class="sub">
+        A research prototype earns credibility by being precise about its limits. These
+        are real, and stated here so nobody discovers them the hard way.
+      </p>
+
+      <div class="cards">
+        <div class="card">
+          <h4>Not production-hardened</h4>
+          <ul class="clean warn">
+            <li><strong>No authentication or authorisation on any endpoint.</strong> Anyone who reaches the port can read, write and delete every dataset.</li>
+            <li>CORS is <code>Access-Control-Allow-Origin: *</code>, hardcoded.</li>
+            <li>Development credentials throughout the Compose stack, and <code>sslmode=disable</code>.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h4>Not proven at scale</h4>
+          <ul class="clean warn">
+            <li>The 100K and 5M thresholds are <strong>design parameters, not empirical findings</strong> — plausible boundaries, not derived from measurement.</li>
+            <li>It has never run against a 5M+ record corpus, so the <code>large</code> tier and its Elasticsearch path are the least exercised code in the repository.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h4>Known incomplete</h4>
+          <ul class="clean warn">
+            <li><code>performBTreeBuild</code> is <strong>an explicit no-op stub</strong>. The advisory-lock coordination and state machine around it are real and working; the sort it guards does nothing.</li>
+            <li>The concurrent B-Tree index is tested but <strong>not wired into the query path</strong>.</li>
+            <li>Hysteresis counters are per-process and in-memory — they neither survive a restart nor coordinate across replicas.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note">
+        <p>
+          <strong>What you should and should not conclude.</strong> This demonstrates that
+          runtime-adaptive index selection is <em>implementable</em> with cheap signals —
+          a trigger-maintained counter, an access log, and a decaying volatility score —
+          and it shows the specific failure mode, oscillation, that any such system must
+          solve. It does <strong>not</strong> demonstrate that adaptation outperforms static
+          configuration, because that comparison was never measured. Anyone tempted to
+          cite this as evidence that adaptive tiering is faster should run the missing
+          benchmark first.
+        </p>
+      </div>
+
+      <p class="prose" style="margin-top:1.5rem">
+        <strong>Origin.</strong> This was built as a hackathon project, single-author,
+        inside a time-box. That constraint explains its shape: the mechanisms that answer
+        the research question are built out properly and instrumented, while the parts
+        that only matter in production are stubs or absent.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Contributing ──────────────────────────────────────────────────── -->
+  <section id="contributing">
+    <div class="wrap">
+      <h2><span class="num">07</span>Contributing</h2>
+      <p class="sub">
+        Contributions are welcome — <strong>especially the missing tiering benchmark, or
+        evidence that any conclusion above is wrong.</strong> Correcting the write-up
+        matters as much as correcting the code.
+      </p>
+      <div class="prose">
+        <ul class="clean">
+          <li>Contributions are accepted under the <strong>MIT licence</strong>.</li>
+          <li>Every commit needs a <strong>DCO sign-off</strong> — <code>git commit -s</code>. There is no CLA.</li>
+          <li>CI runs <code>gofmt</code>, <code>go build</code>, <code>go vet</code>, <code>go test -race</code>, a Next.js build, an integration job against PostgreSQL 16, and <code>govulncheck</code>.</li>
+          <li>Security issues go through a <a href="https://github.com/iampopye/IMI_Hackathon/security/advisories/new">private advisory</a>, never a public issue.</li>
+        </ul>
+      </div>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/iampopye/IMI_Hackathon/blob/main/CONTRIBUTING.md">Contributing guide</a>
+        <a class="btn" href="https://github.com/iampopye/IMI_Hackathon/issues/new/choose">Open an issue</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Maintainer ────────────────────────────────────────────────────── -->
+  <section id="maintainer">
+    <div class="wrap">
+      <h2><span class="num">08</span>Maintainer</h2>
+      <div class="who">
+        <div class="mark" aria-hidden="true">KG</div>
+        <div class="body">
+          <p style="margin:0;font-weight:700;font-size:1.15rem;letter-spacing:-.02em">Karan Garg</p>
+          <p style="margin:.25rem 0 0;color:var(--muted)">
+            Engineer and community professional working on search and distributed systems.
+          </p>
+          <div class="links">
+            <a href="https://github.com/iampopye">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 014 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/>
+              </svg>
+              @iampopye
+            </a>
+            <a href="https://x.com/mrtechgarg">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M18.9 1.9h3.5l-7.6 8.7 8.9 11.8h-6.9l-5.5-7.1-6.2 7.1H1.6l8.1-9.3L1.2 1.9h7.1l5 6.6 5.6-6.6zm-1.2 18.4h1.9L6.4 3.8H4.3l13.4 16.5z"/>
+              </svg>
+              @mrtechgarg
+            </a>
+            <a href="https://www.linkedin.com/in/karan-garg-tech/">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M20.4 20.4h-3.6v-5.6c0-1.3 0-3-1.9-3s-2.1 1.4-2.1 2.9v5.7H9.2V9h3.4v1.6h.1a3.8 3.8 0 013.4-1.9c3.6 0 4.3 2.4 4.3 5.5v6.2zM5.1 7.4a2.1 2.1 0 112.1-2.1 2.1 2.1 0 01-2.1 2.1zM6.9 20.4H3.3V9h3.6v11.4zM22.2 0H1.8A1.8 1.8 0 000 1.8v20.4A1.8 1.8 0 001.8 24h20.4a1.8 1.8 0 001.8-1.8V1.8A1.8 1.8 0 0022.2 0z"/>
+              </svg>
+              karan-garg-tech
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap footrow">
+    <span>MIT licensed &middot; &copy; 2026 Karan Garg</span>
+    <span><a href="https://github.com/iampopye/IMI_Hackathon">Source on GitHub</a></span>
+    <span class="sep">Built as a hackathon project. Still a prototype.</span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var btn = document.getElementById('theme');
+    var root = document.documentElement;
+
+    function current() {
+      var set = root.getAttribute('data-theme');
+      if (set) return set;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    function sync() {
+      var isDark = current() === 'dark';
+      btn.setAttribute('aria-label',
+        isDark ? 'Switch to light theme' : 'Switch to dark theme');
+    }
+
+    btn.addEventListener('click', function () {
+      var next = current() === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('as-theme', next); } catch (e) {}
+      sync();
+    });
+
+    sync();
+  })();
+</script>
+
+</body>
+</html>
