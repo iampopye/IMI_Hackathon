@@ -8,8 +8,8 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/segmentio/kafka-go"
-	"github.com/yourusername/search-system/internal/metrics"
-	"github.com/yourusername/search-system/internal/search"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/metrics"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/search"
 )
 
 // ESConsumer keeps Elasticsearch in sync by processing two Kafka topics:

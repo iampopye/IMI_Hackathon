@@ -16,11 +16,11 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/rs/zerolog"
-	"github.com/yourusername/search-system/internal/dataset"
-	"github.com/yourusername/search-system/internal/db"
-	"github.com/yourusername/search-system/internal/outbox"
-	"github.com/yourusername/search-system/internal/search"
-	"github.com/yourusername/search-system/internal/upsert"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/dataset"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/db"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/outbox"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/search"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/upsert"
 )
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

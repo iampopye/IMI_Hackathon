@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yourusername/search-system/internal/cache"
-	"github.com/yourusername/search-system/internal/outbox"
-	"github.com/yourusername/search-system/internal/search"
-	"github.com/yourusername/search-system/internal/upsert"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/cache"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/outbox"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/search"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/upsert"
 )
 
 // ── Pure chaos tests (no DB required) ────────────────────────────────────────

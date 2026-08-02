@@ -1,4 +1,4 @@
-module github.com/yourusername/search-system
+module github.com/iampopye/IMI_Hackathon/search-system
 
 go 1.25.0
 

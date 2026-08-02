@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/lib/pq"
-	"github.com/yourusername/search-system/internal/outbox"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/outbox"
 )
 
 // batchUpsertSQL performs an atomic bulk upsert via unnest arrays.

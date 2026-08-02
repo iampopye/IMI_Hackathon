@@ -5,8 +5,8 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/segmentio/kafka-go"
-	"github.com/yourusername/search-system/internal/cache"
-	"github.com/yourusername/search-system/internal/search"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/cache"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/search"
 )
 
 // CacheConsumer invalidates search result caches when records are deleted.

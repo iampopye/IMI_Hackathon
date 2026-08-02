@@ -12,12 +12,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/yourusername/search-system/internal/config"
-	"github.com/yourusername/search-system/internal/dataset"
-	"github.com/yourusername/search-system/internal/metrics"
-	"github.com/yourusername/search-system/internal/outbox"
-	"github.com/yourusername/search-system/internal/search"
-	"github.com/yourusername/search-system/internal/upsert"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/config"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/dataset"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/metrics"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/outbox"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/search"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/upsert"
 )
 
 // createDatasetSQL inserts a dataset and initialises its state and count rows atomically.

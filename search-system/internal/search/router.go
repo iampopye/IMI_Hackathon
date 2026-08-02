@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
-	"github.com/yourusername/search-system/internal/cache"
-	"github.com/yourusername/search-system/internal/dataset"
-	"github.com/yourusername/search-system/internal/metrics"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/cache"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/dataset"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/metrics"
 )
 
 // SmartSearchRouter routes every query to the optimal engine based on dataset

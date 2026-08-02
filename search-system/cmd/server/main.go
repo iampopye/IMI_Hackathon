@@ -11,16 +11,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
-	"github.com/yourusername/search-system/internal/api"
-	"github.com/yourusername/search-system/internal/cache"
-	"github.com/yourusername/search-system/internal/config"
-	"github.com/yourusername/search-system/internal/dataset"
-	"github.com/yourusername/search-system/internal/db"
-	"github.com/yourusername/search-system/internal/outbox"
-	"github.com/yourusername/search-system/internal/pipeline"
-	"github.com/yourusername/search-system/internal/reconciler"
-	"github.com/yourusername/search-system/internal/search"
-	"github.com/yourusername/search-system/internal/upsert"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/api"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/cache"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/config"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/dataset"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/db"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/outbox"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/pipeline"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/reconciler"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/search"
+	"github.com/iampopye/IMI_Hackathon/search-system/internal/upsert"
 )
 
 func main() {
