@@ -1,0 +1,112 @@
+name: Bug report
+description: Something behaves differently than the code or README says it should
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report.
+
+        This project is a research prototype, so please check
+        [What this is not](https://github.com/iampopye/IMI_Hackathon#what-this-is-not)
+        first — missing authentication, wide-open CORS, the `performBTreeBuild`
+        no-op stub, and the unwired B-Tree index are all known and documented.
+
+        **Never report a security vulnerability here.** Follow
+        [SECURITY.md](https://github.com/iampopye/IMI_Hackathon/blob/main/SECURITY.md).
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight
+      options:
+        - label: I checked the "What this is not" section and this is not a documented limitation
+          required: true
+        - label: This is not a security vulnerability
+          required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - search-system — HTTP API
+        - search-system — adaptive tiering / profiler / monitor
+        - search-system — search engines (Bleve / Elasticsearch)
+        - search-system — cache (L1 / Redis)
+        - search-system — write path (upsert / outbox / pipeline)
+        - search-system — reconciler
+        - search-system — migrations / database
+        - search-ui — Next.js dashboard
+        - Observability (Prometheus / Grafana)
+        - Deployment (Docker Compose / Kubernetes)
+        - Documentation
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: If the README or a code comment states this behaviour, please link or quote it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened
+      description: Include the exact error, log line, or HTTP response.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Include the `curl` commands or test invocation. A failing test case is ideal.
+      placeholder: |
+        1. cp config/config.yaml.example config/config.yaml, set credentials
+        2. docker compose up -d postgres redis
+        3. go run ./cmd/server
+        4. curl -s "localhost:8080/datasets/$DS/search?q=example"
+        5. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or metrics
+      description: >
+        Server logs are zerolog JSON on stdout. If the issue concerns adaptation,
+        `dataset_tier_transitions_total` and `search_requests_total` from /metrics
+        are especially useful. Redact any credentials.
+      render: shell
+
+  - type: input
+    id: commit
+    attributes:
+      label: Commit SHA or branch
+      placeholder: e50c0cc, or main
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: |
+        OS: Ubuntu 24.04
+        Go: go version go1.25.0 linux/amd64
+        Deployment: docker compose / bare go run / kind
+        Optional services running: PostgreSQL only / + Redis / + Elasticsearch / + Kafka
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else

@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/iampopye/IMI_Hackathon/security/advisories/new
+    about: Report privately through a GitHub security advisory. Never in a public issue.
+  - name: Known limitations of this prototype
+    url: https://github.com/iampopye/IMI_Hackathon#what-this-is-not
+    about: No auth, wide-open CORS, unproven at scale, and two incomplete components — all documented. Please check here first.
+  - name: Question or discussion
+    url: https://github.com/iampopye/IMI_Hackathon/discussions
+    about: Ask about the design, the adaptive mechanism, or how to reproduce a result.
+  - name: Contributing guide
+    url: https://github.com/iampopye/IMI_Hackathon/blob/main/CONTRIBUTING.md
+    about: Development setup, the DCO sign-off requirement, and what contributions are most useful.

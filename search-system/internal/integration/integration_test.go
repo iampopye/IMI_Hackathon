@@ -14,13 +14,13 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/lib/pq"
-	"github.com/rs/zerolog"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/dataset"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/db"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/outbox"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/search"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/upsert"
+	_ "github.com/lib/pq"
+	"github.com/rs/zerolog"
 )
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -66,11 +66,11 @@ func createTestDataset(t *testing.T, conn *sql.DB, name string) string {
 		t.Fatalf("INSERT dataset_states for %s: %v", id, err)
 	}
 	t.Cleanup(func() {
-		conn.ExecContext(ctx, `DELETE FROM outbox        WHERE dataset_id = $1`, id) //nolint:errcheck
-		conn.ExecContext(ctx, `DELETE FROM records       WHERE dataset_id = $1`, id) //nolint:errcheck
+		conn.ExecContext(ctx, `DELETE FROM outbox        WHERE dataset_id = $1`, id)  //nolint:errcheck
+		conn.ExecContext(ctx, `DELETE FROM records       WHERE dataset_id = $1`, id)  //nolint:errcheck
 		conn.ExecContext(ctx, `DELETE FROM dataset_states WHERE dataset_id = $1`, id) //nolint:errcheck
 		conn.ExecContext(ctx, `DELETE FROM dataset_counts WHERE dataset_id = $1`, id) //nolint:errcheck
-		conn.ExecContext(ctx, `DELETE FROM datasets      WHERE id = $1`, id) //nolint:errcheck
+		conn.ExecContext(ctx, `DELETE FROM datasets      WHERE id = $1`, id)          //nolint:errcheck
 	})
 	return id
 }
@@ -163,7 +163,7 @@ func TestIntegration_UpsertIdempotent(t *testing.T) {
 	rec := []upsert.Record{
 		{ExternalID: "rec-001", Source: "test", Name: "Widget Alpha", Value: `{"price":10}`},
 	}
-	engine.BulkUpsert(context.Background(), dsID, rec)   // first — inserts
+	engine.BulkUpsert(context.Background(), dsID, rec)       // first — inserts
 	r2 := engine.BulkUpsert(context.Background(), dsID, rec) // second — same content
 
 	if r2.Skipped != 1 {
@@ -261,7 +261,7 @@ func TestIntegration_FullSync_GhostElimination(t *testing.T) {
 	engine.BulkUpsert(context.Background(), dsID, []upsert.Record{
 		{ExternalID: "keep-1", Source: "test", Name: "Keep 1", Value: `{}`},
 		{ExternalID: "keep-2", Source: "test", Name: "Keep 2", Value: `{}`},
-		{ExternalID: "ghost",  Source: "test", Name: "Ghost",  Value: `{}`},
+		{ExternalID: "ghost", Source: "test", Name: "Ghost", Value: `{}`},
 	})
 
 	// FullSync with only 2 records → "ghost" must be soft-deleted.
@@ -345,9 +345,9 @@ func TestIntegration_BleveMemorySearch_ExactMatch(t *testing.T) {
 	engine := newEngine(conn)
 
 	engine.BulkUpsert(context.Background(), dsID, []upsert.Record{
-		{ExternalID: "item-1", Source: "test", Name: "Espresso Machine",  Value: `{"category":"coffee"}`},
+		{ExternalID: "item-1", Source: "test", Name: "Espresso Machine", Value: `{"category":"coffee"}`},
 		{ExternalID: "item-2", Source: "test", Name: "Drip Coffee Maker", Value: `{"category":"coffee"}`},
-		{ExternalID: "item-3", Source: "test", Name: "French Press",      Value: `{"category":"coffee"}`},
+		{ExternalID: "item-3", Source: "test", Name: "French Press", Value: `{"category":"coffee"}`},
 	})
 
 	memEngine := search.NewMemoryEngine(conn, nopLog())

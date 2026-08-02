@@ -1,0 +1,80 @@
+name: Feature request or experiment proposal
+description: Propose a change, an experiment, or a measurement worth running
+title: "[proposal] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is a research prototype, so proposals that produce **evidence** are
+        as welcome as proposals that add code.
+
+        The highest-value open item is named in the README: there is no benchmark
+        comparing adaptive tier selection against a static choice. If that is what
+        you are proposing, say so — it goes to the front of the queue.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of proposal is this?
+      options:
+        - An experiment or benchmark to run
+        - Evidence that a documented conclusion is wrong
+        - Filling a known gap (stub, unwired component, config gap)
+        - A new capability
+        - Developer experience or reproducibility
+        - Documentation
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem or open question does this address?
+      description: >
+        Describe the gap in the current understanding or implementation. If it
+        relates to something the README already flags as untested or incomplete,
+        link to it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: >
+        For an experiment, describe the method — what is varied, what is measured,
+        what corpus, and what result would confirm or refute the hypothesis. For a
+        code change, sketch which packages are affected.
+    validations:
+      required: true
+
+  - type: textarea
+    id: measurement
+    attributes:
+      label: How would we know it worked?
+      description: >
+        Which metric, benchmark, or test demonstrates the outcome? New runtime
+        behaviour is expected to come with a Prometheus metric in internal/metrics.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Design constraints
+      description: These properties of the prototype should be preserved.
+      options:
+        - label: This keeps Redis, Elasticsearch and Kafka individually optional (PostgreSQL stays the only hard dependency)
+        - label: This does not edit an already-applied migration (migrations are append-only)
+        - label: I am willing to work on this myself
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else

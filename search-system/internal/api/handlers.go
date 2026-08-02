@@ -196,7 +196,7 @@ func (h *Handler) BulkUpsert(c *gin.Context) {
 	metrics.UpsertRecordsTotal.WithLabelValues("failed").Add(float64(result.Failed))
 
 	if result.Total > 0 {
-		h.metaStore.OnDatasetChanged(c.Request.Context(), datasetID)           //nolint:errcheck
+		h.metaStore.OnDatasetChanged(c.Request.Context(), datasetID) //nolint:errcheck
 		h.searchRouter.InvalidateDataset(c.Request.Context(), datasetID)
 	}
 
@@ -305,10 +305,20 @@ func (h *Handler) Search(c *gin.Context) {
 		Time:      time.Now(),
 		DatasetID: datasetID,
 		Term:      term,
-		Engine:    func() string { if result != nil { return result.Engine }; return "unknown" }(),
+		Engine: func() string {
+			if result != nil {
+				return result.Engine
+			}
+			return "unknown"
+		}(),
 		LatencyMS: latencyMS,
-		Hits:      func() int { if result != nil { return int(result.Total) }; return 0 }(),
-		CacheHit:  cacheHit,
+		Hits: func() int {
+			if result != nil {
+				return int(result.Total)
+			}
+			return 0
+		}(),
+		CacheHit: cacheHit,
 	})
 
 	c.JSON(http.StatusOK, result)

@@ -60,7 +60,7 @@ type ElasticsearchConfig struct {
 
 type RedisConfig struct {
 	Host           string `yaml:"host"`
-	Password       string `yaml:"password"`        // injected via REDIS_PASSWORD env var in K8s
+	Password       string `yaml:"password"` // injected via REDIS_PASSWORD env var in K8s
 	MaxMemory      string `yaml:"max_memory"`
 	EvictionPolicy string `yaml:"eviction_policy"`
 	MemoryCapacity int    `yaml:"memory_capacity"` // in-process LRU entry limit (default 1000)

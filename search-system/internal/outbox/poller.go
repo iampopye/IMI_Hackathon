@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/rs/zerolog"
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/metrics"
+	"github.com/rs/zerolog"
 )
 
 // Publisher is the interface the Poller uses to forward events to the message bus.

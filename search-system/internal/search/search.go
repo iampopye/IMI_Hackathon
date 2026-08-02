@@ -30,10 +30,10 @@ type Hit struct {
 
 // Result is the unified response from any search tier.
 type Result struct {
-	Hits   []Hit         `json:"hits"`
-	Total  uint64        `json:"total"`
-	Engine string        `json:"engine"`
-	TookNs int64         `json:"took_ns"`
+	Hits   []Hit  `json:"hits"`
+	Total  uint64 `json:"total"`
+	Engine string `json:"engine"`
+	TookNs int64  `json:"took_ns"`
 }
 
 // indexDoc is the shape stored inside every Bleve document.

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/lib/pq" // PostgreSQL driver registration
 	"github.com/iampopye/IMI_Hackathon/search-system/internal/config"
+	_ "github.com/lib/pq" // PostgreSQL driver registration
 )
 
 // Connect opens and validates a PostgreSQL connection pool.
